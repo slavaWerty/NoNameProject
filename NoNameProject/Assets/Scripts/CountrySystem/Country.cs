@@ -1,10 +1,13 @@
 ﻿using Interfaces;
+using System;
 using UnityEngine;
 
 namespace CountrySystem
 {
     public class Country : IInitzializable
     {
+        public Action DataChanged;
+
         private const string COUNTRY_KEY = "country_data";
         private const string COUNTRYINIT_KEY = "countryInit_key";
 
@@ -12,6 +15,8 @@ namespace CountrySystem
         private IStorageService _storageService;
 
         private CountryData _data;
+
+        public CountryData Data => _data;
 
         public Country(CountryConfig countryConfig, IStorageService storageService)
         {
@@ -38,6 +43,16 @@ namespace CountrySystem
 
                 PlayerPrefs.SetInt(COUNTRYINIT_KEY, 1);
             }
+
+            ChangeData(0);
+        }
+
+        public void ChangeData(int number)
+        {
+            _data.CountFillagers += number;
+
+            DataChanged?.Invoke();
+            _storageService.Save(COUNTRY_KEY, _data);
         }
     }
 }
