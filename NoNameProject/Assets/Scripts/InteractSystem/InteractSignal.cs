@@ -8,7 +8,6 @@ public abstract class InteractSignal : MonoBehaviour
     public void OnMouseDown()
     {
         Interaction();
-        Debug.Log("Mouse Klick");
     }
 
     protected virtual void Interaction()

@@ -1,5 +1,5 @@
 ﻿public abstract class UIFactory
 {
-    public abstract Popup CreatePopup(object obj);
+    public abstract UIElement CreatePopup(object obj);
 }
 

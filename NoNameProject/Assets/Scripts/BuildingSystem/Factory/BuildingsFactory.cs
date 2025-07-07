@@ -1,7 +1,7 @@
-﻿namespace BuildingSystem.Factory
+﻿using BuildingSystem;
+
+public abstract class BuildingsFactory : Factory
 {
-    public abstract class BuildingsFactory
-    {
-        public abstract Building Build();
-    }
+    public abstract Building Build(int level);
 }
+
