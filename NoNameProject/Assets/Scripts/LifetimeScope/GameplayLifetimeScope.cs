@@ -1,7 +1,8 @@
 using BuildingSystem;
 using BuildingSystem.Configs;
+using BuildingSystem.Factory;
 using CountrySystem;
-using StorageService;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UI;
@@ -23,49 +24,64 @@ public class GameplayLifetimeScope : LifetimeScope
     [SerializeField] private Vector2Int _gridSize;
     [Space(10)]
     [SerializeField] private List<Button> _buildingButtons;
+    [SerializeField] private List<ChangeBuildingsStateUI> _changesBuildingsStateUI;
     [Space(10)]
-    [SerializeField] private TestBuildingConfig _testBuildingConfig;
+    [SerializeField] private TestBuildingConfig _testCircleBuildingConfig;
+    [SerializeField] private TestBuildingConfig _testCapsuleBuildingConfig;
 
     protected override void Configure(IContainerBuilder builder)
     {
-        BuildingsSystemRegister(builder);
+        var playerPrefsDataProvider = new PlayerPrefsGameStateProvider();
+        builder.RegisterInstance<IGameStateProvider>(playerPrefsDataProvider);
+
+        var buildingsService = BuildingsSystemRegister(builder, playerPrefsDataProvider);
 
         CameraMoveRegister(builder);
-        CountryRegister(builder);
+        var country = CountryRegister(builder);
+        InteractSystemRegister(builder, buildingsService);
+        RegisterGameplayUI(builder, country, buildingsService);
 
         builder.RegisterEntryPoint<GameplayEntryPoint>();
     }
 
-    private void BuildingsSystemRegister(IContainerBuilder builder)
+    private BuildingsService BuildingsSystemRegister(IContainerBuilder builder, IGameStateProvider gameStateProvider)
     {
-        var buildingsGrid = new BuildingsGrid(_camera, _gridSize);
-
-        var factories = new BuildingsFactories(_testBuildingConfig);
-        var buildingSubscribe = new BuildingsSubscribe(buildingsGrid, _buildingButtons, factories);
+        Dictionary<string, BuildingsFactory> dictionary = FactoryDictionaryRegister();
+        var buildingsSpawner = new BuildingsSpawner(_camera, _gridSize, dictionary, gameStateProvider);
+        builder.RegisterInstance(buildingsSpawner);
+        var buildingSubscribe = new BuildingsService(buildingsSpawner,
+            _buildingButtons);
         builder.RegisterInstance(buildingSubscribe);
-
-        InteractSystemRegister(builder, buildingSubscribe);
+        return buildingSubscribe;
     }
 
-    private void InteractSystemRegister(IContainerBuilder builder, BuildingsSubscribe buildingSubscribe)
+    private Dictionary<string, BuildingsFactory> FactoryDictionaryRegister()
+    {
+        Dictionary<string, BuildingsFactory> dictionary = new Dictionary<string, BuildingsFactory>();
+        dictionary[nameof(TestBuilding)] = new TestBuildingFactory(_testCapsuleBuildingConfig, _testCircleBuildingConfig);
+        dictionary[nameof(Test2Building)] = new Test2BuildingFactory(_testCapsuleBuildingConfig, _testCircleBuildingConfig);
+        return dictionary;
+    }
+
+    private void InteractSystemRegister(IContainerBuilder builder, BuildingsService buildingSubscribe)
     {
         var uiFactory = new TextUIFactory(_container);
-        var inetractSbscribe = new InteractSubscribe(uiFactory, buildingSubscribe);
+        var inetractSbscribe = new InteractService(uiFactory, buildingSubscribe);
         builder.RegisterInstance(inetractSbscribe);
     }
 
-    private void CountryRegister(IContainerBuilder builder)
+    private Country CountryRegister(IContainerBuilder builder)
     {
-        var storageService = new JsonStorageService();
-        var country = new Country(_countryConfig, storageService);
+        var country = new Country(_countryConfig);
         builder.RegisterInstance(country);
-
-        RegisterGameplayUI(builder, country);
+        return country;
     }
 
-    private void RegisterGameplayUI(IContainerBuilder builder, Country country)
+    private void RegisterGameplayUI(IContainerBuilder builder, Country country,
+        BuildingsService buildingsService)
     {
-        var gameplayUI = new GameplayUI(_fillagersText, country);
+        var gameplayUI = new GameplayUI(_fillagersText,
+            country, _changesBuildingsStateUI, buildingsService, _testCircleBuildingConfig, _testCapsuleBuildingConfig);
         builder.RegisterInstance(gameplayUI);
     }
 

@@ -10,8 +10,9 @@ public class GameplayEntryPoint : IStartable, ITickable, IDisposable
     [Inject] private CameraMove _cameraMove;
     [Inject] private Country _country;
     [Inject] private GameplayUI _ui;
-    [Inject] private BuildingsSubscribe _buildingsSubscribe;
-    [Inject] private InteractSubscribe _interactSubscribe;
+    [Inject] private BuildingsService _buildingsSubscribe;
+    [Inject] private InteractService _interactSubscribe;
+    [Inject] private IGameStateProvider _gameStateProvider;
 
     public void Start()
     {
@@ -20,6 +21,7 @@ public class GameplayEntryPoint : IStartable, ITickable, IDisposable
         _country.Initzialize();
         _interactSubscribe.Initzialize();
         _buildingsSubscribe.Initzialize();
+        _gameStateProvider.LoadGameState();
     }
 
     public void Tick()
